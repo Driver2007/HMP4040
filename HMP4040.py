@@ -155,11 +155,13 @@ class HMP4040 (PyTango.Device_4Impl):
     def read_CH1_C(self, attr):
         self.debug_stream("In read_CH1_C()")
         #----- PROTECTED REGION ID(HMP4040.CH1_C_read) ENABLED START -----#
-        if self.get_state() == PyTango.DevState.ON:
-            c=self._send_and_recieve("CURR?", 1, True).strip("\n")
-            print "c", len(c), c
-            if len(c)>0:
-                self.attr_CH1_C_read=round(float(c),3)
+        try:
+            if self.get_state() == PyTango.DevState.ON:
+                c=self._send_and_recieve("CURR?", 1, True).strip("\n")
+                if len(c)>0:
+                    self.attr_CH1_C_read=round(float(c),3)
+        except:
+            pass
         attr.set_value(self.attr_CH1_C_read)
         
         #----- PROTECTED REGION END -----#	//	HMP4040.CH1_C_read
@@ -176,10 +178,13 @@ class HMP4040 (PyTango.Device_4Impl):
     def read_CH2_V(self, attr):
         self.debug_stream("In read_CH2_V()")
         #----- PROTECTED REGION ID(HMP4040.CH2_V_read) ENABLED START -----#
-        if self.get_state() == PyTango.DevState.ON:
-            v=self._send_and_recieve("VOLT?", 1, True).strip("\n")
-            if len(v)>0:
-                self.attr_CH2_V_read=round(float(v),3)
+        try:
+            if self.get_state() == PyTango.DevState.ON:
+                v=self._send_and_recieve("VOLT?", 2, True).strip("\n")
+                if len(v)>0:
+                    self.attr_CH2_V_read=round(float(v),3)
+        except:
+            pass
         attr.set_value(self.attr_CH2_V_read)
        
         #----- PROTECTED REGION END -----#	//	HMP4040.CH2_V_read
@@ -196,6 +201,13 @@ class HMP4040 (PyTango.Device_4Impl):
     def read_CH2_C(self, attr):
         self.debug_stream("In read_CH2_C()")
         #----- PROTECTED REGION ID(HMP4040.CH2_C_read) ENABLED START -----#
+        try:
+            if self.get_state() == PyTango.DevState.ON:
+                c=self._send_and_recieve("CURR?", 2, True).strip("\n")
+                if len(c)>0:
+                    self.attr_CH2_C_read=round(float(c),3)
+        except:
+            pass
         attr.set_value(self.attr_CH2_C_read)
         
         #----- PROTECTED REGION END -----#	//	HMP4040.CH2_C_read
@@ -212,6 +224,13 @@ class HMP4040 (PyTango.Device_4Impl):
     def read_CH3_V(self, attr):
         self.debug_stream("In read_CH3_V()")
         #----- PROTECTED REGION ID(HMP4040.CH3_V_read) ENABLED START -----#
+        try:
+            if self.get_state() == PyTango.DevState.ON:
+                v=self._send_and_recieve("VOLT?", 3, True).strip("\n")
+                if len(v)>0:
+                    self.attr_CH3_V_read=round(float(v),3)
+        except:
+            pass
         attr.set_value(self.attr_CH3_V_read)
       
         #----- PROTECTED REGION END -----#	//	HMP4040.CH3_V_read
@@ -228,6 +247,13 @@ class HMP4040 (PyTango.Device_4Impl):
     def read_CH3_C(self, attr):
         self.debug_stream("In read_CH3_C()")
         #----- PROTECTED REGION ID(HMP4040.CH3_C_read) ENABLED START -----#
+        try:
+            if self.get_state() == PyTango.DevState.ON:
+                c=self._send_and_recieve("CURR?", 3, True).strip("\n")
+                if len(c)>0:
+                    self.attr_CH3_C_read=round(float(c),3)
+        except:
+            pass
         attr.set_value(self.attr_CH3_C_read)
         
         #----- PROTECTED REGION END -----#	//	HMP4040.CH3_C_read
@@ -244,6 +270,13 @@ class HMP4040 (PyTango.Device_4Impl):
     def read_CH4_V(self, attr):
         self.debug_stream("In read_CH4_V()")
         #----- PROTECTED REGION ID(HMP4040.CH4_V_read) ENABLED START -----#
+        try:
+            if self.get_state() == PyTango.DevState.ON:
+                v=self._send_and_recieve("VOLT?", 4, True).strip("\n")
+                if len(v)>0:
+                    self.attr_CH4_V_read=round(float(v),3)
+        except:
+            pass
         attr.set_value(self.attr_CH4_V_read)
         
         #----- PROTECTED REGION END -----#	//	HMP4040.CH4_V_read
@@ -260,6 +293,13 @@ class HMP4040 (PyTango.Device_4Impl):
     def read_CH4_C(self, attr):
         self.debug_stream("In read_CH4_C()")
         #----- PROTECTED REGION ID(HMP4040.CH4_C_read) ENABLED START -----#
+        try:
+            if self.get_state() == PyTango.DevState.ON:
+                c=self._send_and_recieve("CURR?", 4, True).strip("\n")
+                if len(c)>0:
+                    self.attr_CH4_C_read=round(float(c),3)
+        except:
+            pass
         attr.set_value(self.attr_CH4_C_read)
         
         #----- PROTECTED REGION END -----#	//	HMP4040.CH4_C_read
@@ -276,6 +316,13 @@ class HMP4040 (PyTango.Device_4Impl):
     def read_output_on_off(self, attr):
         self.debug_stream("In read_output_on_off()")
         #----- PROTECTED REGION ID(HMP4040.output_on_off_read) ENABLED START -----#
+        if self.get_state() == PyTango.DevState.ON:
+            resp=self._send_and_recieve("OUTP:GEN?", 0, True).strip("\n")
+            if resp!="":
+                if resp=="1":
+                    self.attr_output_on_off_read=True
+                elif resp=="0":
+                    self.attr_output_on_off_read=False
         attr.set_value(self.attr_output_on_off_read)
         
         #----- PROTECTED REGION END -----#	//	HMP4040.output_on_off_read
@@ -294,6 +341,7 @@ class HMP4040 (PyTango.Device_4Impl):
         self.debug_stream("In read_output_ch1()")
         #----- PROTECTED REGION ID(HMP4040.output_ch1_read) ENABLED START -----#
         attr.set_value(self.attr_output_ch1_read)
+        self.attr_output_ch1_read=data
         
         #----- PROTECTED REGION END -----#	//	HMP4040.output_ch1_read
         
@@ -321,7 +369,8 @@ class HMP4040 (PyTango.Device_4Impl):
         if data==True and self.get_state() == PyTango.DevState.ON:
             self._send_and_recieve("OUTP ON",2, False)
         elif data==False and self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("OUTP OFF", 2, False)        
+            self._send_and_recieve("OUTP OFF", 2, False)  
+        self.attr_output_ch2_read=data
         #----- PROTECTED REGION END -----#	//	HMP4040.output_ch2_write
         
     def read_output_ch3(self, attr):
@@ -336,9 +385,10 @@ class HMP4040 (PyTango.Device_4Impl):
         data = attr.get_write_value()
         #----- PROTECTED REGION ID(HMP4040.output_ch3_write) ENABLED START -----#
         if data==True and self.get_state() == PyTango.DevState.ON:
-            print self._send_and_recieve("OUTP ON", 3, False)
+            self._send_and_recieve("OUTP ON", 3, False)
         elif data==False and self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("OUTP OFF", 3, False)        
+            self._send_and_recieve("OUTP OFF", 3, False)
+        self.attr_output_ch3_read=data
         #----- PROTECTED REGION END -----#	//	HMP4040.output_ch3_write
         
     def read_output_ch4(self, attr):
@@ -355,7 +405,8 @@ class HMP4040 (PyTango.Device_4Impl):
         if data==True and self.get_state() == PyTango.DevState.ON:
             self._send_and_recieve("OUTP ON", 4, False)
         elif data==False and self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("OUTP OFF", 4, False)        
+            self._send_and_recieve("OUTP OFF", 4, False)
+        self.attr_output_ch4_read=data
         #----- PROTECTED REGION END -----#	//	HMP4040.output_ch4_write
         
     
@@ -374,75 +425,6 @@ class HMP4040 (PyTango.Device_4Impl):
     
 
     #----- PROTECTED REGION ID(HMP4040.programmer_methods) ENABLED START -----#
-
-    def pool_values_thread(self):
-        while True:
-            if self.get_state() == PyTango.DevState.ON:               
-                
-                resp=self._send_and_recieve("OUTP:GEN?", 0, True).strip("\n")
-                if resp=='1':
-                    self.attr_output_on_off_read=True
-                elif resp=='0':
-                    self.attr_output_on_off_read=False  
-                    
-                v1=self._send_and_recieve("VOLT?", 1, True).strip("\n")
-                c1=self._send_and_recieve("CURR?", 1, True).strip("\n")           
-                try:
-                    self.attr_CH1_C_read=round(float(c1),3)
-                    self.attr_CH1_V_read=round(float(v1),3)
-                except:
-                    pass
-
-                resp=self._send_and_recieve("OUTP1?",0, True).strip("\n")
-                if resp=='1':
-                    self.attr_output_ch1_read=True
-                elif resp=='0':
-                    self.attr_output_ch1_read=False 
-
-                v2=self._send_and_recieve("VOLT?",2, True).strip("\n")
-                c2=self._send_and_recieve("CURR?",2, True).strip("\n")           
-                try:
-                    self.attr_CH2_C_read=round(float(c2),3)
-                    self.attr_CH2_V_read=round(float(v2),3)
-                except:
-                    pass
-                
-                resp=self._send_and_recieve("OUTP2?", 0, True).strip("\n")
-                if resp=='1':
-                    self.attr_output_ch2_read=True
-                elif resp=='0':
-                    self.attr_output_ch2_read=False
-
-                
-                v3=self._send_and_recieve("VOLT?",3, True).strip("\n")
-                c3=self._send_and_recieve("CURR?",3, True).strip("\n")           
-                try:
-                    self.attr_CH3_C_read=round(float(c3),3)
-                    self.attr_CH3_V_read=round(float(v3),3)
-                except:
-                    pass
-
-                resp=self._send_and_recieve("OUTP3?", 0, True).strip("\n")
-                if resp=='1':
-                    self.attr_output_ch3_read=True
-                elif resp=='0':
-                    self.attr_output_ch3_read=False
-
-                v4=self._send_and_recieve("VOLT?",4, True).strip("\n")
-                c4=self._send_and_recieve("CURR?",4, True).strip("\n")           
-                try:
-                    self.attr_CH4_C_read=round(float(c4),3)
-                    self.attr_CH4_V_read=round(float(v4),3)
-                except:
-                    pass
-
-
-                resp=self._send_and_recieve("OUTP4?", 0, True).strip("\n")
-                if resp=='1':
-                    self.attr_output_ch4_read=True
-                elif resp=='0':
-                    self.attr_output_ch4_read=False
-            time.sleep(0.1)
            
     def connect(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -479,32 +461,28 @@ class HMP4040 (PyTango.Device_4Impl):
         #print "command", command
         with self.commlock:
             #print ("communicate called")
-            try:
-                if channel!=0:
-                    self.sock.send("INST:NSEL {}".format(str(channel))+'\n')
-                    self.sock.send(command+'\n')
-                else:
-                    self.sock.send(command+'\n')
-                if recieve==True:
-                    time.sleep(0.1)
-                    resp = ""
-                    try:
-                        resp += self.sock.recv(10000)
-                    except socket.error:
-                        return ""
-                    tstart = time.time()
-                    tend = tstart
-                    # really wait (block!) until end-of-line character is reached
-                    while( (len(resp)==0 or resp[-1]!='\n') and tend-tstart<timeout):
-                        #print "Delay!"
-                        resp += self.sock.recv(10000)
-                        
-                        time.sleep(WAIT_TIME_UNIT)
-                        tend = time.time()
-                        #self.last_comm_timeout = (tend-tstart>=timeout)            
-                    return resp
-            except:
-                return ""
+            if channel!=0:
+                self.sock.send("INST:NSEL {}".format(str(channel))+'\n')
+                self.sock.send(command+'\n')
+            else:
+                self.sock.send(command+'\n')
+            if recieve==True:
+                time.sleep(0.200)
+                resp = ""
+                try:
+                    resp += self.sock.recv(10000)
+                except socket.error:
+                    return ""
+                tstart = time.time()
+                tend = tstart
+                # really wait (block!) until end-of-line character is reached
+                while( (len(resp)==0 or resp[-1]!='\n') and tend-tstart<timeout):
+                    #print "Delay!"
+                    resp += self.sock.recv(10000)                     
+                    time.sleep(WAIT_TIME_UNIT)
+                    tend = time.time()
+                    #self.last_comm_timeout = (tend-tstart>=timeout)            
+                return resp
         
             
 
