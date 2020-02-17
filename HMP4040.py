@@ -55,7 +55,7 @@ import threading
 import Tkinter as tk
 import tkMessageBox
 
-TIMEOUT=0.05
+TIMEOUT=0.2
 READ_SIZE=10000
 #----- PROTECTED REGION END -----#	//	HMP4040.additionnal_import
 
