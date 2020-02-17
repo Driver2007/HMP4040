@@ -46,15 +46,13 @@ import PyTango
 import sys
 # Add additional import
 #----- PROTECTED REGION ID(HMP4040.additionnal_import) ENABLED START -----#
-import socket
+from pylink import TCPLink
 import time
 from threading import RLock
 import threading
 
 import Tkinter as tk
 import tkMessageBox
-
-WAIT_TIME_UNIT=0.01
 #----- PROTECTED REGION END -----#	//	HMP4040.additionnal_import
 
 # Device States Description
@@ -86,38 +84,37 @@ class HMP4040 (PyTango.Device_4Impl):
     def init_device(self):
         self.debug_stream("In init_device()")
         self.get_device_properties(self.get_device_class())
-        self.attr_CH1_V_read = 0.0
-        self.attr_CH1_C_read = 0.0
-        self.attr_CH2_V_read = 0.0
-        self.attr_CH2_C_read = 0.0
-        self.attr_CH3_V_read = 0.0
-        self.attr_CH3_C_read = 0.0
-        self.attr_CH4_V_read = 0.0
-        self.attr_CH4_C_read = 0.0
-        self.attr_output_on_off_read = False
-        self.attr_output_ch1_read = False
-        self.attr_output_ch2_read = False
-        self.attr_output_ch3_read = False
-        self.attr_output_ch4_read = False
+        self.attr_CH1_V_read_read = 0.0
+        self.attr_CH1_C_read_read = 0.0
+        self.attr_CH2_V_read_read = 0.0
+        self.attr_CH2_C_read_read = 0.0
+        self.attr_CH3_V_read_read = 0.0
+        self.attr_CH3_C_read_read = 0.0
+        self.attr_CH4_V_read_read = 0.0
+        self.attr_CH4_C_read_read = 0.0
+        self.attr_output_on_off_read_read = False
+        self.attr_output_CH1_read_read = False
+        self.attr_output_CH2_read_read = False
+        self.attr_output_CH3_read_read = False
+        self.attr_output_CH4_read_read = False
         #----- PROTECTED REGION ID(HMP4040.init_device) ENABLED START -----#
-        self.commlock = RLock()  
-        self.connect()
-        
-        self.check_ch1=False
-        self.check_ch2=False
-        self.check_ch3=False
-        self.check_ch4=False
-        
         self.check_connection_warning=False
+        self.connection_locked=False
         
+        self.output_ch=[False]*5
+        self.voltage=[0.0]*5
+        self.current=[0.0]*5
+        self.voltage_limit=[0.0]*5
+        self.connect()
         if not 'AskQuestion' in dir(self):
             self.AskQuestion = threading.Thread(target=self.AskQuestion_thread)
             self.AskQuestion.setDaemon(True)
             self.AskQuestion.start()
-        #if not 'pool_values' in dir(self):
-        #    self.pool_values = threading.Thread(target=self.pool_values_thread)
-        #    self.pool_values.setDaemon(True)
-        #    self.pool_values.start() 
+        if not 'pool_values' in dir(self):
+            self.pool_values = threading.Thread(target=self.pool_values_thread)
+            self.pool_values.setDaemon(True)
+            self.pool_values.start() 
+
         #----- PROTECTED REGION END -----#	//	HMP4040.init_device
 
     def always_executed_hook(self):
@@ -130,284 +127,310 @@ class HMP4040 (PyTango.Device_4Impl):
     #    HMP4040 read/write attribute methods
     # -------------------------------------------------------------------------
     
-    def read_CH1_V(self, attr):
-        self.debug_stream("In read_CH1_V()")
-        #----- PROTECTED REGION ID(HMP4040.CH1_V_read) ENABLED START -----#
-        try:
-            if self.get_state() == PyTango.DevState.ON:
-                v=self._send_and_recieve("VOLT?", 1, True).strip("\n")
-                if len(v)>0:
-                    self.attr_CH1_V_read=round(float(v),3)
-        except:
-            pass
-        attr.set_value(self.attr_CH1_V_read)
-        
-        #----- PROTECTED REGION END -----#	//	HMP4040.CH1_V_read
-        
     def write_CH1_V(self, attr):
         self.debug_stream("In write_CH1_V()")
         data = attr.get_write_value()
         #----- PROTECTED REGION ID(HMP4040.CH1_V_write) ENABLED START -----#
-        if self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("VOLT {}".format(data),1, False)
-        #----- PROTECTED REGION END -----#	//	HMP4040.CH1_V_write
-        
-    def read_CH1_C(self, attr):
-        self.debug_stream("In read_CH1_C()")
-        #----- PROTECTED REGION ID(HMP4040.CH1_C_read) ENABLED START -----#
-        try:
+        while self.connection_locked==True:
+            time.sleep(0.001)
+        else:
+            self.connection_locked=True
             if self.get_state() == PyTango.DevState.ON:
-                c=self._send_and_recieve("CURR?", 1, True).strip("\n")
-                if len(c)>0:
-                    self.attr_CH1_C_read=round(float(c),3)
-        except:
-            pass
-        attr.set_value(self.attr_CH1_C_read)
-        
-        #----- PROTECTED REGION END -----#	//	HMP4040.CH1_C_read
+                self.write('INST OUT{}'.format('1'))
+                self.write('VOLT {}'.format(str(data)))
+            self.connection_locked=False            
+        #----- PROTECTED REGION END -----#	//	HMP4040.CH1_V_write
         
     def write_CH1_C(self, attr):
         self.debug_stream("In write_CH1_C()")
         data = attr.get_write_value()
         #----- PROTECTED REGION ID(HMP4040.CH1_C_write) ENABLED START -----#
-        if self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("CURR {}".format(data),1, False)        
-            self.check_ch1=True
-        #----- PROTECTED REGION END -----#	//	HMP4040.CH1_C_write
-        
-    def read_CH2_V(self, attr):
-        self.debug_stream("In read_CH2_V()")
-        #----- PROTECTED REGION ID(HMP4040.CH2_V_read) ENABLED START -----#
-        try:
+        while self.connection_locked==True:
+            time.sleep(0.001)
+        else:
+            self.connection_locked=True
             if self.get_state() == PyTango.DevState.ON:
-                v=self._send_and_recieve("VOLT?", 2, True).strip("\n")
-                if len(v)>0:
-                    self.attr_CH2_V_read=round(float(v),3)
-        except:
-            pass
-        attr.set_value(self.attr_CH2_V_read)
-       
-        #----- PROTECTED REGION END -----#	//	HMP4040.CH2_V_read
+                self.write('INST OUT{}'.format('1'))
+                self.write('CURR {}'.format(str(data)))
+            self.connection_locked=False                 
+        #----- PROTECTED REGION END -----#	//	HMP4040.CH1_C_write
         
     def write_CH2_V(self, attr):
         self.debug_stream("In write_CH2_V()")
         data = attr.get_write_value()
         #----- PROTECTED REGION ID(HMP4040.CH2_V_write) ENABLED START -----#
-        if self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("VOLT {}".format(data), 2, False)
-            self.check_ch2=True
-        #----- PROTECTED REGION END -----#	//	HMP4040.CH2_V_write
-        
-    def read_CH2_C(self, attr):
-        self.debug_stream("In read_CH2_C()")
-        #----- PROTECTED REGION ID(HMP4040.CH2_C_read) ENABLED START -----#
-        try:
+        while self.connection_locked==True:
+            time.sleep(0.001)
+        else:
+            self.connection_locked=True
             if self.get_state() == PyTango.DevState.ON:
-                c=self._send_and_recieve("CURR?", 2, True).strip("\n")
-                if len(c)>0:
-                    self.attr_CH2_C_read=round(float(c),3)
-        except:
-            pass
-        attr.set_value(self.attr_CH2_C_read)
-        
-        #----- PROTECTED REGION END -----#	//	HMP4040.CH2_C_read
+                self.write('INST OUT{}'.format('2'))
+                self.write('VOLT {}'.format(str(data)))
+            self.connection_locked=False         
+        #----- PROTECTED REGION END -----#	//	HMP4040.CH2_V_write
         
     def write_CH2_C(self, attr):
         self.debug_stream("In write_CH2_C()")
         data = attr.get_write_value()
         #----- PROTECTED REGION ID(HMP4040.CH2_C_write) ENABLED START -----#
-        if self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("CURR {}".format(data), 2, False)
-            self.check_ch2=True
-        #----- PROTECTED REGION END -----#	//	HMP4040.CH2_C_write
-        
-    def read_CH3_V(self, attr):
-        self.debug_stream("In read_CH3_V()")
-        #----- PROTECTED REGION ID(HMP4040.CH3_V_read) ENABLED START -----#
-        try:
+        while self.connection_locked==True:
+            time.sleep(0.001)
+        else:
+            self.connection_locked=True
             if self.get_state() == PyTango.DevState.ON:
-                v=self._send_and_recieve("VOLT?", 3, True).strip("\n")
-                if len(v)>0:
-                    self.attr_CH3_V_read=round(float(v),3)
-        except:
-            pass
-        attr.set_value(self.attr_CH3_V_read)
-      
-        #----- PROTECTED REGION END -----#	//	HMP4040.CH3_V_read
+                self.write('INST OUT{}'.format('2'))
+                self.write('CURR {}'.format(str(data)))
+            self.connection_locked=False            
+        #----- PROTECTED REGION END -----#	//	HMP4040.CH2_C_write
         
     def write_CH3_V(self, attr):
         self.debug_stream("In write_CH3_V()")
         data = attr.get_write_value()
         #----- PROTECTED REGION ID(HMP4040.CH3_V_write) ENABLED START -----#
-        if self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("VOLT {}".format(data), 3, False)
-            self.check_ch3=True
-        #----- PROTECTED REGION END -----#	//	HMP4040.CH3_V_write
-        
-    def read_CH3_C(self, attr):
-        self.debug_stream("In read_CH3_C()")
-        #----- PROTECTED REGION ID(HMP4040.CH3_C_read) ENABLED START -----#
-        try:
+        while self.connection_locked==True:
+            time.sleep(0.001)
+        else:
+            self.connection_locked=True
             if self.get_state() == PyTango.DevState.ON:
-                c=self._send_and_recieve("CURR?", 3, True).strip("\n")
-                if len(c)>0:
-                    self.attr_CH3_C_read=round(float(c),3)
-        except:
-            pass
-        attr.set_value(self.attr_CH3_C_read)
-        
-        #----- PROTECTED REGION END -----#	//	HMP4040.CH3_C_read
+                self.write('INST OUT{}'.format('3'))
+                self.write('VOLT {}'.format(str(data)))
+            self.connection_locked=False            
+        #----- PROTECTED REGION END -----#	//	HMP4040.CH3_V_write
         
     def write_CH3_C(self, attr):
         self.debug_stream("In write_CH3_C()")
         data = attr.get_write_value()
         #----- PROTECTED REGION ID(HMP4040.CH3_C_write) ENABLED START -----#
-        if self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("CURR {}".format(data), 3, False)
-            self.check_ch3=True
-        #----- PROTECTED REGION END -----#	//	HMP4040.CH3_C_write
-        
-    def read_CH4_V(self, attr):
-        self.debug_stream("In read_CH4_V()")
-        #----- PROTECTED REGION ID(HMP4040.CH4_V_read) ENABLED START -----#
-        try:
+        while self.connection_locked==True:
+            time.sleep(0.001)
+        else:
+            self.connection_locked=True
             if self.get_state() == PyTango.DevState.ON:
-                v=self._send_and_recieve("VOLT?", 4, True).strip("\n")
-                if len(v)>0:
-                    self.attr_CH4_V_read=round(float(v),3)
-        except:
-            pass
-        attr.set_value(self.attr_CH4_V_read)
-        
-        #----- PROTECTED REGION END -----#	//	HMP4040.CH4_V_read
+                self.write('INST OUT{}'.format('3'))
+                self.write('CURR {}'.format(str(data)))
+            self.connection_locked=False         
+        #----- PROTECTED REGION END -----#	//	HMP4040.CH3_C_write
         
     def write_CH4_V(self, attr):
         self.debug_stream("In write_CH4_V()")
         data = attr.get_write_value()
         #----- PROTECTED REGION ID(HMP4040.CH4_V_write) ENABLED START -----#
-        if self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("VOLT {}".format(data), 4, False)
-            self.check_ch4=True
-        #----- PROTECTED REGION END -----#	//	HMP4040.CH4_V_write
-        
-    def read_CH4_C(self, attr):
-        self.debug_stream("In read_CH4_C()")
-        #----- PROTECTED REGION ID(HMP4040.CH4_C_read) ENABLED START -----#
-        try:
+        while self.connection_locked==True:
+            time.sleep(0.001)
+        else:
+            self.connection_locked=True
             if self.get_state() == PyTango.DevState.ON:
-                c=self._send_and_recieve("CURR?", 4, True).strip("\n")
-                if len(c)>0:
-                    self.attr_CH4_C_read=round(float(c),3)
-        except:
-            pass
-        attr.set_value(self.attr_CH4_C_read)
-        
-        #----- PROTECTED REGION END -----#	//	HMP4040.CH4_C_read
+                self.write('INST OUT{}'.format('4'))
+                self.write('VOLT {}'.format(str(data)))
+            self.connection_locked=False            
+        #----- PROTECTED REGION END -----#	//	HMP4040.CH4_V_write
         
     def write_CH4_C(self, attr):
         self.debug_stream("In write_CH4_C()")
         data = attr.get_write_value()
         #----- PROTECTED REGION ID(HMP4040.CH4_C_write) ENABLED START -----#
-        if self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("CURR {}".format(data), 4, False)
-            self.check_ch4=True
+        while self.connection_locked==True:
+            time.sleep(0.001)
+        else:
+            self.connection_locked=True
+            if self.get_state() == PyTango.DevState.ON:
+                self.write('INST OUT{}'.format('4'))
+                self.write('CURR {}'.format(str(data)))
+            self.connection_locked=False         
         #----- PROTECTED REGION END -----#	//	HMP4040.CH4_C_write
-        
-    def read_output_on_off(self, attr):
-        self.debug_stream("In read_output_on_off()")
-        #----- PROTECTED REGION ID(HMP4040.output_on_off_read) ENABLED START -----#
-        if self.get_state() == PyTango.DevState.ON:
-            resp=self._send_and_recieve("OUTP:GEN?", 0, True).strip("\n")
-            if resp!="":
-                if resp=="1":
-                    self.attr_output_on_off_read=True
-                elif resp=="0":
-                    self.attr_output_on_off_read=False
-        attr.set_value(self.attr_output_on_off_read)
-        
-        #----- PROTECTED REGION END -----#	//	HMP4040.output_on_off_read
         
     def write_output_on_off(self, attr):
         self.debug_stream("In write_output_on_off()")
         data = attr.get_write_value()
         #----- PROTECTED REGION ID(HMP4040.output_on_off_write) ENABLED START -----#
-        if data==True and self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("OUTP:GEN ON",0, False)
-        elif data==False and self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("OUTP:GEN OFF",0, False)
+        while self.connection_locked==True:
+            time.sleep(0.001)
+        else:
+            self.connection_locked=True
+            if self.get_state() == PyTango.DevState.ON:
+                if data==True:
+                    self.write('OUTP:GEN {}'.format('1'))      
+                else:
+                    self.write('OUTP:GEN {}'.format('0'))
+            self.connection_locked=False         
         #----- PROTECTED REGION END -----#	//	HMP4040.output_on_off_write
         
-    def read_output_ch1(self, attr):
-        self.debug_stream("In read_output_ch1()")
-        #----- PROTECTED REGION ID(HMP4040.output_ch1_read) ENABLED START -----#
-        attr.set_value(self.attr_output_ch1_read)
-        self.attr_output_ch1_read=data
-        
-        #----- PROTECTED REGION END -----#	//	HMP4040.output_ch1_read
-        
-    def write_output_ch1(self, attr):
-        self.debug_stream("In write_output_ch1()")
+    def write_output_CH1(self, attr):
+        self.debug_stream("In write_output_CH1()")
         data = attr.get_write_value()
-        #----- PROTECTED REGION ID(HMP4040.output_ch1_write) ENABLED START -----#
-        if data==True and self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("OUTP ON",1, False)
-        elif data==False and self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("OUTP OFF",1, False)        
-        #----- PROTECTED REGION END -----#	//	HMP4040.output_ch1_write
+        #----- PROTECTED REGION ID(HMP4040.output_CH1_write) ENABLED START -----#
+        while self.connection_locked==True:
+            time.sleep(0.001)
+        else:
+            self.connection_locked=True
+            if self.get_state() == PyTango.DevState.ON:
+                if data==True:
+                    self.write('INST OUT{}'.format('1'))
+                    self.write('OUTP {}'.format("1"))            
+                else:
+                    self.write('INST OUT{}'.format('1'))
+                    self.write('OUTP {}'.format('0'))
+            self.connection_locked=False    
+                
+        #----- PROTECTED REGION END -----#	//	HMP4040.output_CH1_write
         
-    def read_output_ch2(self, attr):
-        self.debug_stream("In read_output_ch2()")
-        #----- PROTECTED REGION ID(HMP4040.output_ch2_read) ENABLED START -----#
-        attr.set_value(self.attr_output_ch2_read)
-        
-        #----- PROTECTED REGION END -----#	//	HMP4040.output_ch2_read
-        
-    def write_output_ch2(self, attr):
-        self.debug_stream("In write_output_ch2()")
+    def write_output_CH2(self, attr):
+        self.debug_stream("In write_output_CH2()")
         data = attr.get_write_value()
-        #----- PROTECTED REGION ID(HMP4040.output_ch2_write) ENABLED START -----#
-        if data==True and self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("OUTP ON",2, False)
-        elif data==False and self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("OUTP OFF", 2, False)  
-        self.attr_output_ch2_read=data
-        #----- PROTECTED REGION END -----#	//	HMP4040.output_ch2_write
+        #----- PROTECTED REGION ID(HMP4040.output_CH2_write) ENABLED START -----#
+        while self.connection_locked==True:
+            time.sleep(0.001)
+        else:
+            self.connection_locked=True
+            if self.get_state() == PyTango.DevState.ON:
+                if data==True:
+                    self.write('INST OUT{}'.format('2'))
+                    self.write('OUTP {}'.format("1"))            
+                else:
+                    self.write('INST OUT{}'.format('2'))
+                    self.write('OUTP {}'.format('0'))
+            self.connection_locked=False            
+        #----- PROTECTED REGION END -----#	//	HMP4040.output_CH2_write
         
-    def read_output_ch3(self, attr):
-        self.debug_stream("In read_output_ch3()")
-        #----- PROTECTED REGION ID(HMP4040.output_ch3_read) ENABLED START -----#
-        attr.set_value(self.attr_output_ch3_read)
-        
-        #----- PROTECTED REGION END -----#	//	HMP4040.output_ch3_read
-        
-    def write_output_ch3(self, attr):
-        self.debug_stream("In write_output_ch3()")
+    def write_output_CH3(self, attr):
+        self.debug_stream("In write_output_CH3()")
         data = attr.get_write_value()
-        #----- PROTECTED REGION ID(HMP4040.output_ch3_write) ENABLED START -----#
-        if data==True and self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("OUTP ON", 3, False)
-        elif data==False and self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("OUTP OFF", 3, False)
-        self.attr_output_ch3_read=data
-        #----- PROTECTED REGION END -----#	//	HMP4040.output_ch3_write
+        #----- PROTECTED REGION ID(HMP4040.output_CH3_write) ENABLED START -----#
+        while self.connection_locked==True:
+            time.sleep(0.001)
+        else:
+            self.connection_locked=True
+            if self.get_state() == PyTango.DevState.ON:
+                if data==True:
+                    self.write('INST OUT{}'.format('3'))
+                    self.write('OUTP {}'.format("1"))            
+                else:
+                    self.write('INST OUT{}'.format('3'))
+                    self.write('OUTP {}'.format('0'))
+            self.connection_locked=False           
+        #----- PROTECTED REGION END -----#	//	HMP4040.output_CH3_write
         
-    def read_output_ch4(self, attr):
-        self.debug_stream("In read_output_ch4()")
-        #----- PROTECTED REGION ID(HMP4040.output_ch4_read) ENABLED START -----#
-        attr.set_value(self.attr_output_ch4_read)
-        
-        #----- PROTECTED REGION END -----#	//	HMP4040.output_ch4_read
-        
-    def write_output_ch4(self, attr):
-        self.debug_stream("In write_output_ch4()")
+    def write_output_CH4(self, attr):
+        self.debug_stream("In write_output_CH4()")
         data = attr.get_write_value()
-        #----- PROTECTED REGION ID(HMP4040.output_ch4_write) ENABLED START -----#
-        if data==True and self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("OUTP ON", 4, False)
-        elif data==False and self.get_state() == PyTango.DevState.ON:
-            self._send_and_recieve("OUTP OFF", 4, False)
-        self.attr_output_ch4_read=data
-        #----- PROTECTED REGION END -----#	//	HMP4040.output_ch4_write
+        #----- PROTECTED REGION ID(HMP4040.output_CH4_write) ENABLED START -----#
+        while self.connection_locked==True:
+            time.sleep(0.001)
+        else:
+            self.connection_locked=True
+            if self.get_state() == PyTango.DevState.ON:
+                if data==True:
+                    self.write('INST OUT{}'.format('4'))
+                    self.write('OUTP {}'.format("1"))            
+                else:
+                    self.write('INST OUT{}'.format('4'))
+                    self.write('OUTP {}'.format('0'))
+            self.connection_locked=False         
+        #----- PROTECTED REGION END -----#	//	HMP4040.output_CH4_write
+        
+    def read_CH1_V_read(self, attr):
+        self.debug_stream("In read_CH1_V_read()")
+        #----- PROTECTED REGION ID(HMP4040.CH1_V_read_read) ENABLED START -----#
+        self.attr_CH1_V_read_read=self.voltage[1]
+        attr.set_value(self.attr_CH1_V_read_read)
+        
+        #----- PROTECTED REGION END -----#	//	HMP4040.CH1_V_read_read
+        
+    def read_CH1_C_read(self, attr):
+        self.debug_stream("In read_CH1_C_read()")
+        #----- PROTECTED REGION ID(HMP4040.CH1_C_read_read) ENABLED START -----#
+        self.attr_CH1_C_read_read=self.current[1]
+        attr.set_value(self.attr_CH1_C_read_read)
+        
+        #----- PROTECTED REGION END -----#	//	HMP4040.CH1_C_read_read
+        
+    def read_CH2_V_read(self, attr):
+        self.debug_stream("In read_CH2_V_read()")
+        #----- PROTECTED REGION ID(HMP4040.CH2_V_read_read) ENABLED START -----#
+        self.attr_CH2_V_read_read=self.voltage[2]        
+        attr.set_value(self.attr_CH2_V_read_read)
+        
+        #----- PROTECTED REGION END -----#	//	HMP4040.CH2_V_read_read
+        
+    def read_CH2_C_read(self, attr):
+        self.debug_stream("In read_CH2_C_read()")
+        #----- PROTECTED REGION ID(HMP4040.CH2_C_read_read) ENABLED START -----#
+        self.attr_CH2_C_read_read=self.current[2]
+        attr.set_value(self.attr_CH2_C_read_read)
+        
+        #----- PROTECTED REGION END -----#	//	HMP4040.CH2_C_read_read
+        
+    def read_CH3_V_read(self, attr):
+        self.debug_stream("In read_CH3_V_read()")
+        #----- PROTECTED REGION ID(HMP4040.CH3_V_read_read) ENABLED START -----#    
+        self.attr_CH3_V_read_read=self.voltage[3]        
+        attr.set_value(self.attr_CH3_V_read_read)
+        
+        #----- PROTECTED REGION END -----#	//	HMP4040.CH3_V_read_read
+        
+    def read_CH3_C_read(self, attr):
+        self.debug_stream("In read_CH3_C_read()")
+        #----- PROTECTED REGION ID(HMP4040.CH3_C_read_read) ENABLED START -----#
+        self.attr_CH3_C_read_read=self.current[3]
+        attr.set_value(self.attr_CH3_C_read_read)
+        
+        #----- PROTECTED REGION END -----#	//	HMP4040.CH3_C_read_read
+        
+    def read_CH4_V_read(self, attr):
+        self.debug_stream("In read_CH4_V_read()")
+        #----- PROTECTED REGION ID(HMP4040.CH4_V_read_read) ENABLED START -----#
+        self.attr_CH4_V_read_read=self.voltage[4]
+        attr.set_value(self.attr_CH4_V_read_read)
+        
+        #----- PROTECTED REGION END -----#	//	HMP4040.CH4_V_read_read
+        
+    def read_CH4_C_read(self, attr):
+        self.debug_stream("In read_CH4_C_read()")
+        #----- PROTECTED REGION ID(HMP4040.CH4_C_read_read) ENABLED START -----#
+        self.attr_CH4_C_read_read=self.current[4]
+        attr.set_value(self.attr_CH4_C_read_read)
+        
+        #----- PROTECTED REGION END -----#	//	HMP4040.CH4_C_read_read
+        
+    def read_output_on_off_read(self, attr):
+        self.debug_stream("In read_output_on_off_read()")
+        #----- PROTECTED REGION ID(HMP4040.output_on_off_read_read) ENABLED START -----#
+
+        attr.set_value(self.attr_output_on_off_read_read)
+        
+        #----- PROTECTED REGION END -----#	//	HMP4040.output_on_off_read_read
+        
+    def read_output_CH1_read(self, attr):
+        self.debug_stream("In read_output_CH1_read()")
+        #----- PROTECTED REGION ID(HMP4040.output_CH1_read_read) ENABLED START -----#
+        self.attr_output_CH1_read_read=self.output_ch[1]
+        attr.set_value(self.attr_output_CH1_read_read)
+        
+        #----- PROTECTED REGION END -----#	//	HMP4040.output_CH1_read_read
+        
+    def read_output_CH2_read(self, attr):
+        self.debug_stream("In read_output_CH2_read()")
+        #----- PROTECTED REGION ID(HMP4040.output_CH2_read_read) ENABLED START -----#
+        self.attr_output_CH2_read_read=self.output_ch[2]
+        attr.set_value(self.attr_output_CH2_read_read)
+        
+        #----- PROTECTED REGION END -----#	//	HMP4040.output_CH2_read_read
+        
+    def read_output_CH3_read(self, attr):
+        self.debug_stream("In read_output_CH3_read()")
+        #----- PROTECTED REGION ID(HMP4040.output_CH3_read_read) ENABLED START -----#
+        self.attr_output_CH2_read_read=self.output_ch[2]
+        attr.set_value(self.attr_output_CH3_read_read)
+        
+        #----- PROTECTED REGION END -----#	//	HMP4040.output_CH3_read_read
+        
+    def read_output_CH4_read(self, attr):
+        self.debug_stream("In read_output_CH4_read()")
+        #----- PROTECTED REGION ID(HMP4040.output_CH4_read_read) ENABLED START -----#
+        self.attr_output_CH2_read_read=self.output_ch[2]
+        attr.set_value(self.attr_output_CH4_read_read)
+        
+        #----- PROTECTED REGION END -----#	//	HMP4040.output_CH4_read_read
         
     
     
@@ -425,67 +448,92 @@ class HMP4040 (PyTango.Device_4Impl):
     
 
     #----- PROTECTED REGION ID(HMP4040.programmer_methods) ENABLED START -----#
-           
+
     def connect(self):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.connected = False
-        self.last_comm_timeout = False
-        print ("Connecting to Host", self.host, ", Port", self.port)
-        try:
-            self.sock.setblocking(1)
-        except:
-            pass
-        try:
-            self.sock.connect((self.host, self.port))
-        except Exception as e:
-            print ("Exception occured while connecting")
-            print (e.__class__)
-            print (e)
-            self.connected = False
-        else:
-            print ("Success.")
-            self.connected = True
-        self.sock.setblocking(0)
-        if self.connected==True:
-            resp=self._send_and_recieve("*IDN?",0, True)
-            if resp.split(",")[0]=="ROHDE&SCHWARZ":
-                self.set_state(PyTango.DevState.ON)
-            else:
-                self.set_state(PyTango.DevState.FAULT)
-                self.check_connection_warning=True
+        self.tcp = TCPLink(self.host, self.port)
+        self.write("*IDN?")
+        if self.read().split(",")[0]=="ROHDE&SCHWARZ":
+            self.set_state(PyTango.DevState.ON)
         else:
             self.set_state(PyTango.DevState.FAULT)
             self.check_connection_warning=True
-        
-    def _send_and_recieve(self, command, channel, recieve, timeout=2.0):
-        #print "command", command
-        with self.commlock:
-            #print ("communicate called")
-            if channel!=0:
-                self.sock.send("INST:NSEL {}".format(str(channel))+'\n')
-                self.sock.send(command+'\n')
-            else:
-                self.sock.send(command+'\n')
-            if recieve==True:
-                time.sleep(0.200)
-                resp = ""
-                try:
-                    resp += self.sock.recv(10000)
-                except socket.error:
-                    return ""
-                tstart = time.time()
-                tend = tstart
-                # really wait (block!) until end-of-line character is reached
-                while( (len(resp)==0 or resp[-1]!='\n') and tend-tstart<timeout):
-                    #print "Delay!"
-                    resp += self.sock.recv(10000)                     
-                    time.sleep(WAIT_TIME_UNIT)
-                    tend = time.time()
-                    #self.last_comm_timeout = (tend-tstart>=timeout)            
-                return resp
-        
             
+    def pool_values_thread(self):
+        while True:
+            if self.get_state() == PyTango.DevState.ON:
+                time1=time.time()
+                while self.connection_locked==True:
+                    time.sleep(0.001)
+                else:
+                    self.connection_locked=True
+                    if self.send_and_recieve('OUTP:GEN?')=='1':
+                        self.attr_output_on_off_read_read=True
+                    else:
+                        self.attr_output_on_off_read_read=False
+                    self.connection_locked=False
+                time.sleep(0.002)
+                print (time.time()-time1) 
+                                    
+                
+                for i in range(1,5,1):               
+                    while self.connection_locked==True:
+                        time.sleep(0.001)
+                    else:
+                        self.connection_locked=True
+                        self.write('INST OUT{:d}'.format(i))
+                        if self.send_and_recieve('OUTP?')=='1':
+                            self.output_ch[i]=True
+                        else:
+                            self.output_ch[i]=False
+                        self.voltage[i]=float(self.send_and_recieve('MEAS:VOLT?'))
+                        self.current[i]=float(self.send_and_recieve('MEAS:CURR?'))
+                        self.connection_locked=False
+                    time.sleep(0.005)
+                    print (time.time()-time1) 
 
+                    time.sleep(0.002)
+                print (time.time()-time1)                        
+            time.sleep(0.1)
+        
+        
+    def reconnect(self):
+        self.close()
+        self.open()
+
+    def send_and_recieve(self, command):
+        self.write(command)
+        return self.read()
+
+    def read(self):
+        s=''
+        try:
+            s = self.tcp.read()
+        except:
+            print('First reading attempt failed on "{}", trying again...'.format(type(self).__name__))
+            try:
+                s = self.tcp.read()
+            except:
+                print('Timeout while reading from "{}"!'.format(type(self).__name__))
+                raise
+        s = s.replace('\r', '')
+        s = s.replace('\n', '')
+        return s
+        
+    def write(self, command):
+        command=command+'\r\n'
+        try:
+            self.tcp.write(command)
+            time.sleep(0.004)
+        except:
+            self.reconnect()
+            try:
+                self.tcp.write(command)
+                time.sleep(0.004)
+            except:
+                print('Timeout while writing to "{}"!'.format(type(self).__name__))
+                raise
+                
+                
     def AskQuestion_thread(self):
         while True:
             if self.check_connection_warning==True:
@@ -494,7 +542,7 @@ class HMP4040 (PyTango.Device_4Impl):
                 root.withdraw()
                 MsgBox = tkMessageBox.showinfo ('Warning!','can not connect to device',icon = 'warning')
                 root.destroy()
-        
+            time.sleep(1)
     #----- PROTECTED REGION END -----#	//	HMP4040.programmer_methods
 
 class HMP4040Class(PyTango.DeviceClass):
@@ -532,76 +580,140 @@ class HMP4040Class(PyTango.DeviceClass):
         'CH1_V':
             [[PyTango.DevDouble,
             PyTango.SCALAR,
-            PyTango.READ_WRITE],
+            PyTango.WRITE],
             {
                 'Memorized':"true"
             } ],
         'CH1_C':
             [[PyTango.DevDouble,
             PyTango.SCALAR,
-            PyTango.READ_WRITE],
+            PyTango.WRITE],
             {
                 'Memorized':"true"
             } ],
         'CH2_V':
             [[PyTango.DevDouble,
             PyTango.SCALAR,
-            PyTango.READ_WRITE],
+            PyTango.WRITE],
             {
                 'Memorized':"true"
             } ],
         'CH2_C':
             [[PyTango.DevDouble,
             PyTango.SCALAR,
-            PyTango.READ_WRITE],
+            PyTango.WRITE],
             {
                 'Memorized':"true"
             } ],
         'CH3_V':
             [[PyTango.DevDouble,
             PyTango.SCALAR,
-            PyTango.READ_WRITE],
+            PyTango.WRITE],
             {
                 'Memorized':"true"
             } ],
         'CH3_C':
             [[PyTango.DevDouble,
             PyTango.SCALAR,
-            PyTango.READ_WRITE],
+            PyTango.WRITE],
             {
                 'Memorized':"true"
             } ],
         'CH4_V':
             [[PyTango.DevDouble,
             PyTango.SCALAR,
-            PyTango.READ_WRITE],
+            PyTango.WRITE],
             {
                 'Memorized':"true"
             } ],
         'CH4_C':
             [[PyTango.DevDouble,
             PyTango.SCALAR,
-            PyTango.READ_WRITE]],
+            PyTango.WRITE]],
         'output_on_off':
             [[PyTango.DevBoolean,
             PyTango.SCALAR,
-            PyTango.READ_WRITE]],
-        'output_ch1':
+            PyTango.WRITE]],
+        'output_CH1':
             [[PyTango.DevBoolean,
             PyTango.SCALAR,
-            PyTango.READ_WRITE]],
-        'output_ch2':
+            PyTango.WRITE],
+            {
+                'Memorized':"true"
+            } ],
+        'output_CH2':
             [[PyTango.DevBoolean,
             PyTango.SCALAR,
-            PyTango.READ_WRITE]],
-        'output_ch3':
+            PyTango.WRITE],
+            {
+                'Memorized':"true"
+            } ],
+        'output_CH3':
             [[PyTango.DevBoolean,
             PyTango.SCALAR,
-            PyTango.READ_WRITE]],
-        'output_ch4':
+            PyTango.WRITE],
+            {
+                'Memorized':"true"
+            } ],
+        'output_CH4':
             [[PyTango.DevBoolean,
             PyTango.SCALAR,
-            PyTango.READ_WRITE]],
+            PyTango.WRITE],
+            {
+                'Memorized':"true"
+            } ],
+        'CH1_V_read':
+            [[PyTango.DevDouble,
+            PyTango.SCALAR,
+            PyTango.READ]],
+        'CH1_C_read':
+            [[PyTango.DevDouble,
+            PyTango.SCALAR,
+            PyTango.READ]],
+        'CH2_V_read':
+            [[PyTango.DevDouble,
+            PyTango.SCALAR,
+            PyTango.READ]],
+        'CH2_C_read':
+            [[PyTango.DevDouble,
+            PyTango.SCALAR,
+            PyTango.READ]],
+        'CH3_V_read':
+            [[PyTango.DevDouble,
+            PyTango.SCALAR,
+            PyTango.READ]],
+        'CH3_C_read':
+            [[PyTango.DevDouble,
+            PyTango.SCALAR,
+            PyTango.READ]],
+        'CH4_V_read':
+            [[PyTango.DevDouble,
+            PyTango.SCALAR,
+            PyTango.READ]],
+        'CH4_C_read':
+            [[PyTango.DevDouble,
+            PyTango.SCALAR,
+            PyTango.READ]],
+        'output_on_off_read':
+            [[PyTango.DevBoolean,
+            PyTango.SCALAR,
+            PyTango.READ]],
+        'output_CH1_read':
+            [[PyTango.DevBoolean,
+            PyTango.SCALAR,
+            PyTango.READ]],
+        'output_CH2_read':
+            [[PyTango.DevBoolean,
+            PyTango.SCALAR,
+            PyTango.READ]],
+        'output_CH3_read':
+            [[PyTango.DevBoolean,
+            PyTango.SCALAR,
+            PyTango.READ]],
+        'output_CH4_read':
+            [[PyTango.DevBoolean,
+            PyTango.SCALAR,
+            PyTango.READ]],
         }
 
 
