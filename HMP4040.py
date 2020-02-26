@@ -119,7 +119,10 @@ class HMP4040 (PyTango.Device_4Impl):
             self.pool_values = threading.Thread(target=self.pool_values_thread)
             self.pool_values.setDaemon(True)
             self.pool_values.start() 
-
+        if not 'timer' in dir(self):
+            self.timer = threading.Thread(target=self.timer_thread)
+            self.timer.setDaemon(True)
+            self.timer.start() 
         #----- PROTECTED REGION END -----#	//	HMP4040.init_device
 
     def always_executed_hook(self):
@@ -437,7 +440,7 @@ class HMP4040 (PyTango.Device_4Impl):
     def read_output_CH3_read(self, attr):
         self.debug_stream("In read_output_CH3_read()")
         #----- PROTECTED REGION ID(HMP4040.output_CH3_read_read) ENABLED START -----#
-        self.attr_output_CH2_read_read=self.output_ch[2]
+        self.attr_output_CH3_read_read=self.output_ch[3]
         attr.set_value(self.attr_output_CH3_read_read)
         
         #----- PROTECTED REGION END -----#	//	HMP4040.output_CH3_read_read
@@ -445,7 +448,7 @@ class HMP4040 (PyTango.Device_4Impl):
     def read_output_CH4_read(self, attr):
         self.debug_stream("In read_output_CH4_read()")
         #----- PROTECTED REGION ID(HMP4040.output_CH4_read_read) ENABLED START -----#
-        self.attr_output_CH2_read_read=self.output_ch[2]
+        self.attr_output_CH4_read_read=self.output_ch[4]
         attr.set_value(self.attr_output_CH4_read_read)
         
         #----- PROTECTED REGION END -----#	//	HMP4040.output_CH4_read_read
@@ -535,8 +538,19 @@ class HMP4040 (PyTango.Device_4Impl):
                             self.connection_locked=False
                         self.check[i]=False
                     time.sleep(0.002)
+
             time.sleep(0.1)
-        
+            
+    def timer_thread(self):
+        while True:
+            self.check[1]=True
+            time.sleep(2)
+            self.check[2]=True
+            time.sleep(2)
+            self.check[3]=True
+            time.sleep(2)
+            self.check[4]=True
+            time.sleep(2)
         
     def reconnect(self):
         self.close()
@@ -552,9 +566,7 @@ class HMP4040 (PyTango.Device_4Impl):
         
 
         try:
-            time1=time.time()
             s = self.tcp.read(READ_SIZE,TIMEOUT)
-            print "read_time",time.time()-time1
         except:
             print('First reading attempt failed on "{}", trying again...'.format(type(self).__name__))
             try:
@@ -682,7 +694,10 @@ class HMP4040Class(PyTango.DeviceClass):
         'output_on_off':
             [[PyTango.DevBoolean,
             PyTango.SCALAR,
-            PyTango.WRITE]],
+            PyTango.WRITE],
+            {
+                'Memorized':"true"
+            } ],
         'output_CH1':
             [[PyTango.DevBoolean,
             PyTango.SCALAR,
